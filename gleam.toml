@@ -1,5 +1,5 @@
 name = "taskle"
-version = "1.2.0"
+version = "1.2.1"
 description = "A concurrent programming library for Gleam that provides Elixir-like Task module functionality."
 licences = ["Apache-2.0"]
 repository = { type = "github", user = "bondiano", repo = "taskle" }
