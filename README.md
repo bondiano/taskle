@@ -41,10 +41,6 @@ pub fn main() {
 }
 ```
 
-## API
-
-See the module documentation for detailed API reference.
-
 ## Examples
 
 ### Basic Usage
@@ -146,7 +142,7 @@ pub fn error_handling_example() {
 1. **Always set appropriate timeouts** to prevent hanging operations
 2. **Handle all error cases** explicitly for robust applications
 3. **Use `cancel()` for cleanup** when tasks are no longer needed
-4. **Consider `async_unlinked()`** for fire-and-forget operations
+4. **Consider `start()`** for fire-and-forget operations
 5. **Keep task functions pure** when possible for easier testing and reasoning
 
 ## Performance Considerations

@@ -80,3 +80,188 @@ pub fn not_owner_test() {
     _ -> should.fail()
   }
 }
+
+pub fn await_forever_test() {
+  let task = taskle.async(fn() { 42 })
+  taskle.await_forever(task)
+  |> should.be_ok()
+  |> should.equal(42)
+}
+
+pub fn yield_ready_test() {
+  let task = taskle.async(fn() { 42 })
+  process.sleep(100)
+  // Give task time to complete
+  case taskle.yield(task) {
+    Ok(42) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn yield_not_ready_test() {
+  let task =
+    taskle.async(fn() {
+      process.sleep(1000)
+      42
+    })
+  case taskle.yield(task) {
+    Error(taskle.NotReady) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn try_await_all_test() {
+  let task1 = taskle.async(fn() { 1 })
+  let task2 = taskle.async(fn() { 2 })
+  let task3 = taskle.async(fn() { 3 })
+
+  case taskle.try_await_all([task1, task2, task3], 2000) {
+    Ok([1, 2, 3]) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn start_task_test() {
+  let _task =
+    taskle.start(fn() {
+      process.sleep(100)
+      "side effect"
+    })
+  // Start tasks are fire-and-forget, so just check it doesn't crash
+  should.be_true(True)
+}
+
+pub fn shutdown_test() {
+  let task =
+    taskle.async(fn() {
+      process.sleep(5000)
+      42
+    })
+
+  case taskle.shutdown(task, 1000) {
+    Ok(Nil) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn race_fastest_wins_test() {
+  let slow_task =
+    taskle.async(fn() {
+      process.sleep(1000)
+      "slow"
+    })
+  let fast_task =
+    taskle.async(fn() {
+      process.sleep(100)
+      "fast"
+    })
+
+  case taskle.race([slow_task, fast_task], 2000) {
+    Ok("fast") -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn race_empty_list_test() {
+  case taskle.race([], 1000) {
+    Error(taskle.Timeout) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn race_single_task_test() {
+  let task = taskle.async(fn() { 42 })
+
+  case taskle.race([task], 1000) {
+    Ok(42) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn race_with_crash_test() {
+  let crash_task =
+    taskle.async(fn() {
+      process.sleep(100)
+      panic as "intentional crash"
+    })
+  let slow_task =
+    taskle.async(fn() {
+      process.sleep(1000)
+      "slow"
+    })
+
+  case taskle.race([slow_task, crash_task], 2000) {
+    Error(taskle.Crashed(_)) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn race_timeout_test() {
+  let task1 =
+    taskle.async(fn() {
+      process.sleep(2000)
+      "task1"
+    })
+  let task2 =
+    taskle.async(fn() {
+      process.sleep(2000)
+      "task2"
+    })
+
+  case taskle.race([task1, task2], 100) {
+    Error(taskle.Timeout) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn all_settled_success_test() {
+  let task1 = taskle.async(fn() { 1 })
+  let task2 = taskle.async(fn() { 2 })
+  let task3 = taskle.async(fn() { 3 })
+
+  case taskle.all_settled([task1, task2, task3], 2000) {
+    Ok([taskle.Fulfilled(1), taskle.Fulfilled(2), taskle.Fulfilled(3)]) ->
+      should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn all_settled_mixed_results_test() {
+  let success_task = taskle.async(fn() { 42 })
+  let crash_task = taskle.async(fn() { panic as "intentional error" })
+  let another_task = taskle.async(fn() { 99 })
+
+  case taskle.all_settled([success_task, crash_task, another_task], 2000) {
+    Ok([
+      taskle.Fulfilled(42),
+      taskle.Rejected(taskle.Crashed(_)),
+      taskle.Fulfilled(99),
+    ]) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn all_settled_empty_list_test() {
+  case taskle.all_settled([], 1000) {
+    Ok([]) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn all_settled_timeout_test() {
+  let task1 =
+    taskle.async(fn() {
+      process.sleep(2000)
+      1
+    })
+  let task2 =
+    taskle.async(fn() {
+      process.sleep(2000)
+      2
+    })
+
+  case taskle.all_settled([task1, task2], 100) {
+    Error(taskle.Timeout) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
