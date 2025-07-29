@@ -1,0 +1,13 @@
+name = "taskle"
+version = "1.0.0"
+description = "A concurrent programming library for Gleam that provides Elixir-like Task module functionality."
+licences = ["Apache-2.0"]
+repository = { type = "github", user = "bondiano", repo = "taskle" }
+
+[dependencies]
+gleam_stdlib = ">= 0.44.0 and < 2.0.0"
+gleam_otp = ">= 1.0.0 and < 2.0.0"
+gleam_erlang = ">= 1.2.0 and < 2.0.0"
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"
