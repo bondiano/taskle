@@ -265,3 +265,84 @@ pub fn all_settled_timeout_test() {
     _ -> should.fail()
   }
 }
+
+pub fn await2_success_test() {
+  let task1 = taskle.async(fn() { 42 })
+  let task2 = taskle.async(fn() { "hello" })
+
+  case taskle.await2(task1, task2, 2000) {
+    Ok(#(42, "hello")) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn await2_first_fails_test() {
+  let task1 = taskle.async(fn() { panic as "intentional error" })
+  let task2 = taskle.async(fn() { "hello" })
+
+  case taskle.await2(task1, task2, 2000) {
+    Error(taskle.Crashed(_)) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn await2_timeout_test() {
+  let task1 =
+    taskle.async(fn() {
+      process.sleep(2000)
+      42
+    })
+  let task2 = taskle.async(fn() { "hello" })
+
+  case taskle.await2(task1, task2, 100) {
+    Error(taskle.Timeout) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn await3_success_test() {
+  let task1 = taskle.async(fn() { 42 })
+  let task2 = taskle.async(fn() { "hello" })
+  let task3 = taskle.async(fn() { True })
+
+  case taskle.await3(task1, task2, task3, 2000) {
+    Ok(#(42, "hello", True)) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn await3_second_fails_test() {
+  let task1 = taskle.async(fn() { 42 })
+  let task2 = taskle.async(fn() { panic as "intentional error" })
+  let task3 = taskle.async(fn() { True })
+
+  case taskle.await3(task1, task2, task3, 2000) {
+    Error(taskle.Crashed(_)) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn await4_success_test() {
+  let task1 = taskle.async(fn() { 42 })
+  let task2 = taskle.async(fn() { "hello" })
+  let task3 = taskle.async(fn() { True })
+  let task4 = taskle.async(fn() { 3.14 })
+
+  case taskle.await4(task1, task2, task3, task4, 2000) {
+    Ok(#(42, "hello", True, 3.14)) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}
+
+pub fn await5_success_test() {
+  let task1 = taskle.async(fn() { 42 })
+  let task2 = taskle.async(fn() { "hello" })
+  let task3 = taskle.async(fn() { True })
+  let task4 = taskle.async(fn() { 3.14 })
+  let task5 = taskle.async(fn() { [1, 2, 3] })
+
+  case taskle.await5(task1, task2, task3, task4, task5, 2000) {
+    Ok(#(42, "hello", True, 3.14, [1, 2, 3])) -> should.be_true(True)
+    _ -> should.fail()
+  }
+}

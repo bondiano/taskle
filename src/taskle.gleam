@@ -514,7 +514,6 @@ fn build_race_selector(
     |> process.select_map(subject, fn(msg) {
       case msg {
         TaskResult(value) -> {
-          // Demonitor after receiving result
           process.demonitor_process(monitor)
           RaceResult(Ok(value), task_pid)
         }
@@ -641,6 +640,242 @@ fn build_all_settled_selector(
   })
 }
 
+/// Waits for two tasks to complete and returns a tuple of their results.
+///
+/// Both tasks must complete successfully within the timeout, otherwise an error is returned.
+/// If any task fails, all remaining tasks are cancelled.
+///
+/// ## Examples
+///
+/// ```gleam
+/// let task1 = taskle.async(fn() { 42 })
+/// let task2 = taskle.async(fn() { "hello" })
+///
+/// case taskle.await2(task1, task2, 5000) {
+///   Ok(#(num, str)) -> {
+///     // num = 42, str = "hello"
+///     io.debug(#(num, str))
+///   }
+///   Error(taskle.Timeout) -> io.println("Tasks timed out")
+///   Error(taskle.Crashed(reason)) -> io.println("A task crashed: " <> reason)
+/// }
+/// ```
+pub fn await2(
+  task1: Task(t1),
+  task2: Task(t2),
+  timeout: Int,
+) -> Result(#(t1, t2), Error) {
+  let start_time = system_time_nanoseconds()
+  use result1 <- result.try(
+    await(task1, timeout)
+    |> result.map_error(fn(err) {
+      let _ = cancel(task2)
+      err
+    }),
+  )
+
+  let remaining = remaining_timeout_ms(start_time, timeout)
+  use result2 <- result.try(await(task2, remaining))
+
+  Ok(#(result1, result2))
+}
+
+/// Waits for three tasks to complete and returns a tuple of their results.
+///
+/// All tasks must complete successfully within the timeout, otherwise an error is returned.
+/// If any task fails, all remaining tasks are cancelled.
+///
+/// ## Examples
+///
+/// ```gleam
+/// let task1 = taskle.async(fn() { 42 })
+/// let task2 = taskle.async(fn() { "hello" })
+/// let task3 = taskle.async(fn() { True })
+///
+/// case taskle.await3(task1, task2, task3, 5000) {
+///   Ok(#(num, str, bool)) -> {
+///     // num = 42, str = "hello", bool = True
+///     io.debug(#(num, str, bool))
+///   }
+///   Error(taskle.Timeout) -> io.println("Tasks timed out")
+///   Error(taskle.Crashed(reason)) -> io.println("A task crashed: " <> reason)
+/// }
+/// ```
+pub fn await3(
+  task1: Task(t1),
+  task2: Task(t2),
+  task3: Task(t3),
+  timeout: Int,
+) -> Result(#(t1, t2, t3), Error) {
+  let start_time = system_time_nanoseconds()
+  use result1 <- result.try(
+    await(task1, timeout)
+    |> result.map_error(fn(err) {
+      let _ = cancel(task2)
+      let _ = cancel(task3)
+      err
+    }),
+  )
+
+  let remaining = remaining_timeout_ms(start_time, timeout)
+  use result2 <- result.try(
+    await(task2, remaining)
+    |> result.map_error(fn(err) {
+      let _ = cancel(task3)
+      err
+    }),
+  )
+  let remaining2 = remaining_timeout_ms(start_time, timeout)
+  use result3 <- result.try(await(task3, remaining2))
+
+  Ok(#(result1, result2, result3))
+}
+
+/// Waits for four tasks to complete and returns a tuple of their results.
+///
+/// All tasks must complete successfully within the timeout, otherwise an error is returned.
+/// If any task fails, all remaining tasks are cancelled.
+///
+/// ## Examples
+///
+/// ```gleam
+/// let task1 = taskle.async(fn() { 42 })
+/// let task2 = taskle.async(fn() { "hello" })
+/// let task3 = taskle.async(fn() { True })
+/// let task4 = taskle.async(fn() { 3.14 })
+///
+/// case taskle.await4(task1, task2, task3, task4, 5000) {
+///   Ok(#(num, str, bool, float)) -> {
+///     // num = 42, str = "hello", bool = True, float = 3.14
+///     io.debug(#(num, str, bool, float))
+///   }
+///   Error(taskle.Timeout) -> io.println("Tasks timed out")
+///   Error(taskle.Crashed(reason)) -> io.println("A task crashed: " <> reason)
+/// }
+/// ```
+pub fn await4(
+  task1: Task(t1),
+  task2: Task(t2),
+  task3: Task(t3),
+  task4: Task(t4),
+  timeout: Int,
+) -> Result(#(t1, t2, t3, t4), Error) {
+  let start_time = system_time_nanoseconds()
+  use result1 <- result.try(
+    await(task1, timeout)
+    |> result.map_error(fn(err) {
+      let _ = cancel(task2)
+      let _ = cancel(task3)
+      let _ = cancel(task4)
+      err
+    }),
+  )
+
+  let remaining = remaining_timeout_ms(start_time, timeout)
+  use result2 <- result.try(
+    await(task2, remaining)
+    |> result.map_error(fn(err) {
+      let _ = cancel(task3)
+      let _ = cancel(task4)
+      err
+    }),
+  )
+
+  let remaining2 = remaining_timeout_ms(start_time, timeout)
+  use result3 <- result.try(
+    await(task3, remaining2)
+    |> result.map_error(fn(err) {
+      let _ = cancel(task4)
+      err
+    }),
+  )
+
+  let remaining3 = remaining_timeout_ms(start_time, timeout)
+  use result4 <- result.try(await(task4, remaining3))
+  Ok(#(result1, result2, result3, result4))
+}
+
+/// Waits for five tasks to complete and returns a tuple of their results.
+///
+/// All tasks must complete successfully within the timeout, otherwise an error is returned.
+/// If any task fails, all remaining tasks are cancelled.
+///
+/// ## Examples
+///
+/// ```gleam
+/// let task1 = taskle.async(fn() { 42 })
+/// let task2 = taskle.async(fn() { "hello" })
+/// let task3 = taskle.async(fn() { True })
+/// let task4 = taskle.async(fn() { 3.14 })
+/// let task5 = taskle.async(fn() { [1, 2, 3] })
+///
+/// case taskle.await5(task1, task2, task3, task4, task5, 5000) {
+///   Ok(#(num, str, bool, float, list)) -> {
+///     // num = 42, str = "hello", bool = True, float = 3.14, list = [1, 2, 3]
+///     io.debug(#(num, str, bool, float, list))
+///   }
+///   Error(taskle.Timeout) -> io.println("Tasks timed out")
+///   Error(taskle.Crashed(reason)) -> io.println("A task crashed: " <> reason)
+/// }
+/// ```
+pub fn await5(
+  task1: Task(t1),
+  task2: Task(t2),
+  task3: Task(t3),
+  task4: Task(t4),
+  task5: Task(t5),
+  timeout: Int,
+) -> Result(#(t1, t2, t3, t4, t5), Error) {
+  let start_time = system_time_nanoseconds()
+  use result1 <- result.try(
+    await(task1, timeout)
+    |> result.map_error(fn(err) {
+      let _ = cancel(task2)
+      let _ = cancel(task3)
+      let _ = cancel(task4)
+      let _ = cancel(task5)
+      err
+    }),
+  )
+
+  let remaining = remaining_timeout_ms(start_time, timeout)
+  use result2 <- result.try(
+    await(task2, remaining)
+    |> result.map_error(fn(err) {
+      let _ = cancel(task3)
+      let _ = cancel(task4)
+      let _ = cancel(task5)
+      err
+    }),
+  )
+
+  let remaining2 = remaining_timeout_ms(start_time, timeout)
+  use result3 <- result.try(
+    await(task3, remaining2)
+    |> result.map_error(fn(err) {
+      let _ = cancel(task4)
+      let _ = cancel(task5)
+      err
+    }),
+  )
+
+  let remaining3 = remaining_timeout_ms(start_time, timeout)
+  use result4 <- result.try(
+    await(task4, remaining3)
+    |> result.map_error(fn(err) {
+      let _ = cancel(task5)
+      err
+    }),
+  )
+
+  let remaining4 = remaining_timeout_ms(start_time, timeout)
+  use result5 <- result.try(await(task5, remaining4))
+  Ok(#(result1, result2, result3, result4, result5))
+}
+
+@external(erlang, "erlang", "system_time")
+fn system_time_nanoseconds() -> Int
+
 fn down_to_error(down: Down) -> Error {
   case down {
     process.ProcessDown(pid: _, monitor: _, reason: reason) -> {
@@ -692,6 +927,3 @@ fn validate_multiple_ownership(tasks: List(Task(a))) -> Result(Nil, Error) {
 
   Ok(Nil)
 }
-
-@external(erlang, "erlang", "system_time")
-fn system_time_nanoseconds() -> Int
