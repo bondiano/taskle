@@ -65,9 +65,6 @@ let result = taskle.await(task, 5000)
 
 // Cancel if needed
 taskle.cancel(task, 5000)
-
-// Or start and forget
-taskle.start(fn() { background_work() })
 ```
 
 ## Documentation

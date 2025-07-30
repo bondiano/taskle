@@ -121,16 +121,6 @@ pub fn try_await_all_test() {
   }
 }
 
-pub fn start_task_test() {
-  let _task =
-    taskle.start(fn() {
-      process.sleep(100)
-      "side effect"
-    })
-  // Start tasks are fire-and-forget, so just check it doesn't crash
-  should.be_true(True)
-}
-
 pub fn shutdown_test() {
   let task =
     taskle.async(fn() {
